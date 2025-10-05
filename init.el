@@ -1,4 +1,8 @@
-;; Emacs configuration using use-package
+;;; package --- Emacs configuration using use-package
+
+;;; Commentary:
+
+;;; Code:
 
 (require 'use-package)
 
@@ -80,7 +84,12 @@
     (setq evil-undo-system 'undo-fu)))
 
 ;; General - keybinding framework
-(use-package general)
+(use-package general
+  ;;:after (evil)
+  ;;:config
+  ;;('general-evil-setup)
+  ;;('general-auto-unbind-keys)
+  )
 
 ;; Helm - completion framework
 (use-package helm
