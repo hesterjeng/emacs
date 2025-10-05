@@ -73,7 +73,6 @@
 (use-package projectile
   :init
   (projectile-mode +1)
-  :config
   :bind-keymap
   ("C-c p" . projectile-command-map))
 
@@ -85,11 +84,10 @@
 
 ;; General - keybinding framework
 (use-package general
-  ;;:after (evil)
-  ;;:config
-  ;;('general-evil-setup)
-  ;;('general-auto-unbind-keys)
-  )
+  :after (evil)
+  :config
+  (general-auto-unbind-keys t)
+  (general-evil-setup t))
 
 ;; Helm - completion framework
 (use-package helm

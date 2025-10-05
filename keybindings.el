@@ -7,6 +7,10 @@
 
 (require 'general)
 
+  ;; Use direct key binding instead
+(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+
+
 ;; Create SPC leader key
 (general-create-definer my/leader-keys
   :states '(normal insert visual emacs)
