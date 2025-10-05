@@ -78,9 +78,9 @@
 
 ;; Undo-fu - better undo for Evil mode
 (use-package undo-fu
+  :after (evil)
   :config
-  (with-eval-after-load 'evil
-    (setq evil-undo-system 'undo-fu)))
+  (evil-set-undo-system 'undo-fu))
 
 ;; General - keybinding framework
 (use-package general
