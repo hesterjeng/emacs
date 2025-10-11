@@ -137,13 +137,25 @@
 (use-package pyvenv)
 
 ;; Scheme support
-(use-package geiser)
-(use-package geiser-guile
+(use-package geiser
   :config
+  (setq geiser-active-implementations '(guile))
   (setq geiser-default-implementation 'guile)
+  (setq geiser-repl-use-other-window nil))  ; REPL in same window
+
+(use-package geiser-guile
+  :after geiser
+  :config
+  (setq geiser-guile-binary "guile")
   ;; Add guix paths to exec-path so Emacs can find guile
+  (add-to-list 'exec-path "/home/john/.guix-home/profile/bin")
   (add-to-list 'exec-path "/home/john/Profiles/system/bin")
-  (add-to-list 'exec-path "/home/john/.guix-profile/bin"))
+  (add-to-list 'exec-path "/home/john/.guix-profile/bin")
+  ;; Automatically start REPL and use Guile for all Scheme files
+  (add-hook 'scheme-mode-hook 'geiser-mode)
+  (add-hook 'scheme-mode-hook
+            (lambda ()
+              (setq-local geiser-scheme-implementation 'guile))))
 
 ;; Load custom configurations
 (load-file (expand-file-name "keybindings.el" user-emacs-directory))
