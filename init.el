@@ -136,34 +136,41 @@
 ;; Python virtual environment support
 (use-package pyvenv)
 
+;; Dumb-jump - go-to-definition using ripgrep/ag/grep
+(use-package dumb-jump
+  :config
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
+  (setq dumb-jump-prefer-searcher 'rg)
+  (setq dumb-jump-selector 'helm))
+
 ;; Scheme support
 (use-package geiser
   :config
   (setq geiser-active-implementations '(guile))
-  (setq geiser-default-implementation 'guile)
-  (setq geiser-repl-use-other-window nil))  ; REPL in same window
+  (setq geiser-default-implementation 'guile))
 
 (use-package geiser-guile
   :after geiser
   :config
   (setq geiser-guile-binary "guile")
-  ;; Add guix paths to exec-path so Emacs can find guile
-  (add-to-list 'exec-path "/home/john/.guix-home/profile/bin")
-  (add-to-list 'exec-path "/home/john/Profiles/system/bin")
-  (add-to-list 'exec-path "/home/john/.guix-profile/bin")
-  ;; Automatically start REPL and use Guile for all Scheme files
-  (add-hook 'scheme-mode-hook 'geiser-mode)
-  (add-hook 'scheme-mode-hook
-            (lambda ()
-              (setq-local geiser-scheme-implementation 'guile))))
+  (setq geiser-guile-load-path
+        (list (expand-file-name "~/Projects/guix"))))
 
-;; Load custom configurations
-(load-file (expand-file-name "keybindings.el" user-emacs-directory))
+;; Load custom configurations AFTER all packages
+(with-eval-after-load 'evil-collection
+  (load-file (expand-file-name "keybindings.el" user-emacs-directory)))
 (let ((splash-file (expand-file-name "splash.el" user-emacs-directory)))
   (message "Loading splash.el from: %s" splash-file)
   (if (file-exists-p splash-file)
       (load-file splash-file)
     (message "splash.el not found at: %s" splash-file)))
+
+(use-package
+  :config
+  (gptel-make-anthropic "Claude"
+			:stream t
+			:key "your-api-key")
+  )
 
 (provide 'init)
 ;;; init.el ends here

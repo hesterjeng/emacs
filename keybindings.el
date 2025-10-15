@@ -101,5 +101,9 @@
   "qr" 'restart-emacs
   "qQ" 'kill-emacs)
 
+;; Override Geiser's gd binding to use evil-goto-definition (xref/dumb-jump)
+(with-eval-after-load 'geiser-mode
+  (evil-define-key 'normal geiser-mode-map (kbd "g d") 'evil-goto-definition))
+
 (provide 'keybindings)
 ;;; keybindings.el ends here
