@@ -165,7 +165,7 @@
       (load-file splash-file)
     (message "splash.el not found at: %s" splash-file)))
 
-(use-package
+(use-package gptel
   :config
   (gptel-make-anthropic "Claude"
 			:stream t
