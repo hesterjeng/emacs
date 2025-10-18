@@ -87,7 +87,7 @@
   "cf" 'lsp-format-buffer
   "ca" 'lsp-execute-code-action
   "ci" 'lsp-find-implementation
-  "ct" 'lsp-find-type-definition
+  "ct" 'lsp-describe-thing-at-point
   
   ;; Search
   "s" '(:ignore t :which-key "search")

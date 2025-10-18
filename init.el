@@ -110,10 +110,19 @@
 (with-eval-after-load 'projectile
   (setq projectile-completion-system 'helm))
 
-
 ;; OCaml support
 (use-package tuareg
   :mode ("\\.ml\\'" . tuareg-mode))
+
+;; Merlin - OCaml context-sensitive completion and navigation
+(use-package merlin
+  :hook (tuareg-mode . merlin-mode)
+  :config
+  ;; Enable company completion with Merlin
+  (with-eval-after-load 'company
+    (add-to-list 'company-backends 'merlin-company-backend))
+  ;; Use Merlin for imenu
+  (setq merlin-use-auto-complete-mode nil))
 
 ;; TypeScript support
 (use-package typescript-mode
