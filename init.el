@@ -9,6 +9,7 @@
 ;; Add all Guix Emacs packages to load-path
 (let ((guix-site-lisp (expand-file-name "~/.guix-profile/share/emacs/site-lisp")))
   (when (file-directory-p guix-site-lisp)
+    (add-to-list 'load-path guix-site-lisp)
     (dolist (dir (directory-files guix-site-lisp t "^[^.]"))
       (when (file-directory-p dir)
         (add-to-list 'load-path dir)))))
@@ -207,7 +208,18 @@
   :commands (claude-code-ide claude-code-ide-menu claude-code-ide-resume
              claude-code-ide-continue claude-code-ide-send-prompt)
   :config
-  (claude-code-ide-emacs-tools-setup))
+  (claude-code-ide-emacs-tools-setup)
+  ;; Batch render updates at 16ms (1 frame @ 60fps) instead of 5ms
+  (setq claude-code-ide-vterm-render-delay 0.016)
+  ;; Fix ambiguous-width Unicode chars (spinners/bullets) that cause flicker
+  (defun claude-code-ide--fix-char-widths ()
+    "Set Claude's spinner and bullet characters to single width."
+    (let ((table (make-char-table nil)))
+      (dolist (char '(#x2722 #x2733 #x2217 #x273B #x273D #x23FA))
+        (set-char-table-range table char 1))
+      (set-char-table-parent table char-width-table)
+      (setq-local char-width-table table)))
+  (add-hook 'vterm-mode-hook #'claude-code-ide--fix-char-widths))
 
 (provide 'init)
 ;;; init.el ends here
