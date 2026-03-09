@@ -122,8 +122,11 @@
                               (when (not (process-live-p proc))
                                 (let ((buf (process-buffer proc)))
                                   (when (buffer-live-p buf)
+                                    (let ((win (get-buffer-window buf)))
+                                      (when win (delete-window win)))
                                     (kill-buffer buf))))))
-      (switch-to-buffer buf)
+      (display-buffer buf
+                      '(display-buffer-at-bottom . ((window-height . 5))))
       (message "Whisper recording started..."))))
 
 (defun whisper-stop ()
