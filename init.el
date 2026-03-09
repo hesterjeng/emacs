@@ -6,6 +6,13 @@
 
 (require 'use-package)
 
+;; Add all Guix Emacs packages to load-path
+(let ((guix-site-lisp (expand-file-name "~/.guix-profile/share/emacs/site-lisp")))
+  (when (file-directory-p guix-site-lisp)
+    (dolist (dir (directory-files guix-site-lisp t "^[^.]"))
+      (when (file-directory-p dir)
+        (add-to-list 'load-path dir)))))
+
 ;; Remove UI clutter
 (menu-bar-mode -1)
 (tool-bar-mode -1)
@@ -20,6 +27,14 @@
   (which-key-mode)
   ;; Only show prefix keys
   (setq which-key-show-prefix 'bottom))
+
+;; Smart mode line - cleaner, more informative modeline
+(use-package smart-mode-line
+  :ensure nil  ; Already installed via Guix
+  :config
+  (setq sml/no-confirm-load-theme t)
+  (setq sml/theme 'respectful)
+  (sml/setup))
 
 ;; Evil mode - Vim emulation
 (use-package evil
@@ -112,12 +127,17 @@
 
 ;; OCaml support
 (use-package tuareg
-  :mode ("\\.ml\\'" . tuareg-mode))
+  :mode (("\\.ml[ily]?\\'" . tuareg-mode)
+         ("\\.topml\\'" . tuareg-mode)))
 
 ;; Merlin - OCaml context-sensitive completion and navigation
 (use-package merlin
+  :ensure nil  ; Already installed via Guix
   :hook (tuareg-mode . merlin-mode)
   :config
+  ;; Disable opam usage - rely on dune-generated .merlin files
+  (setq merlin-command "ocamlmerlin")
+  (setq merlin-use-opam-switch nil)
   ;; Enable company completion with Merlin
   (with-eval-after-load 'company
     (add-to-list 'company-backends 'merlin-company-backend))
@@ -174,12 +194,20 @@
       (load-file splash-file)
     (message "splash.el not found at: %s" splash-file)))
 
+;; gptel - direct LLM chat (requires API key)
 (use-package gptel
   :config
   (gptel-make-anthropic "Claude"
-			:stream t
-			:key "your-api-key")
-  )
+    :stream t
+    :key (lambda () (getenv "ANTHROPIC_API_KEY"))))
+
+;; Claude Code IDE - bidirectional Emacs/Claude Code bridge via MCP
+(use-package claude-code-ide
+  :ensure nil
+  :commands (claude-code-ide claude-code-ide-menu claude-code-ide-resume
+             claude-code-ide-continue claude-code-ide-send-prompt)
+  :config
+  (claude-code-ide-emacs-tools-setup))
 
 (provide 'init)
 ;;; init.el ends here

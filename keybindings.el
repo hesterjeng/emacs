@@ -33,7 +33,7 @@
   ;; Buffers
   "b" '(:ignore t :which-key "buffers")
   "bb" 'switch-to-buffer
-  "bd" 'kill-buffer
+  "bd" 'kill-current-buffer
   "bn" 'next-buffer
   "bp" 'previous-buffer
   "br" 'revert-buffer
@@ -42,7 +42,7 @@
   "bs" 'save-buffer
   "bS" 'save-some-buffers
   "bi" 'ibuffer
-  "bk" 'kill-current-buffer
+  "bk" 'kill-buffer
   "ba" 'mark-whole-buffer
   "be" 'eval-buffer
   
