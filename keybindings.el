@@ -95,11 +95,46 @@
   "sp" 'projectile-grep
   "sg" 'grep
   
+  ;; Mic/Whisper
+  "m" '(:ignore t :which-key "mic")
+  "mm" 'whisper-start
+  "mq" 'whisper-stop
+
   ;; Quit/restart
   "q" '(:ignore t :which-key "quit")
   "qq" 'save-buffers-kill-terminal
   "qr" 'restart-emacs
   "qQ" 'kill-emacs)
+
+;; Whisper transcription
+(defvar whisper-transcribe-script "~/Projects/whisper/transcribe.sh")
+(defvar whisper--buffer-name "*whisper*")
+
+(defun whisper-start ()
+  "Start whisper transcription recording."
+  (interactive)
+  (if (get-buffer whisper--buffer-name)
+      (message "Whisper is already recording!")
+    (let ((buf (make-comint-in-buffer "whisper" whisper--buffer-name
+                                       whisper-transcribe-script)))
+      (set-process-sentinel (get-buffer-process buf)
+                            (lambda (proc _event)
+                              (when (not (process-live-p proc))
+                                (let ((buf (process-buffer proc)))
+                                  (when (buffer-live-p buf)
+                                    (kill-buffer buf))))))
+      (switch-to-buffer buf)
+      (message "Whisper recording started..."))))
+
+(defun whisper-stop ()
+  "Stop whisper transcription by sending m."
+  (interactive)
+  (let ((proc (get-buffer-process whisper--buffer-name)))
+    (if proc
+        (progn
+          (comint-send-string proc "\n")
+          (message "Whisper stopping..."))
+      (message "No whisper process running."))))
 
 ;; Override Geiser's gd binding to use evil-goto-definition (xref/dumb-jump)
 (with-eval-after-load 'geiser-mode
