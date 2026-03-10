@@ -92,6 +92,11 @@
 (use-package guix
   :after magit-popup)
 
+;; Envrc - direnv integration (buffer-local environments)
+(use-package envrc
+  :config
+  (envrc-global-mode))
+
 ;; Projectile - project interaction
 (use-package projectile
   :init
