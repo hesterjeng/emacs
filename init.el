@@ -19,6 +19,11 @@
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
 
+;; Smooth scrolling
+(pixel-scroll-precision-mode 1)
+(setq scroll-conservatively 101)
+(setq scroll-margin 3)
+
 ;; Move backup files to dedicated directory
 (setq backup-directory-alist '(("." . "~/.config/emacs/backups")))
 
@@ -214,6 +219,9 @@
              claude-code-ide-continue claude-code-ide-send-prompt)
   :config
   (claude-code-ide-emacs-tools-setup)
+  ;; Ediff: hide Claude window during diff + keep focus on diff controls
+  (setq claude-code-ide-show-claude-window-in-ediff nil
+        claude-code-ide-focus-claude-after-ediff nil)
   ;; Batch render updates at 16ms (1 frame @ 60fps) instead of 5ms
   (setq claude-code-ide-vterm-render-delay 0.016)
   ;; Fix ambiguous-width Unicode chars (spinners/bullets) that cause flicker

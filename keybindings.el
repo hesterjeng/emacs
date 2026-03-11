@@ -95,6 +95,9 @@
   "sp" 'projectile-grep
   "sg" 'grep
   
+  ;; AI (Claude Code IDE)
+  "a" 'claude-code-ide-menu
+
   ;; Mic/Whisper
   "m" '(:ignore t :which-key "mic")
   "mm" 'whisper-start
