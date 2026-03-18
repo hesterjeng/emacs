@@ -219,6 +219,8 @@
              claude-code-ide-continue claude-code-ide-send-prompt)
   :config
   (claude-code-ide-emacs-tools-setup)
+  ;; Open as regular buffer, not a side window
+  (setq claude-code-ide-use-side-window nil)
   ;; Ediff: hide Claude window during diff + keep focus on diff controls
   (setq claude-code-ide-show-claude-window-in-ediff nil
         claude-code-ide-focus-claude-after-ediff nil)
