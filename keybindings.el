@@ -95,8 +95,31 @@
   "sp" 'projectile-grep
   "sg" 'grep
   
-  ;; AI (Claude Code IDE)
-  "a" 'claude-code-ide-menu
+  ;; AI (Agent Shell)
+  "a" '(:ignore t :which-key "ai")
+  "aa" 'agent-shell
+  "an" 'agent-shell-new-shell
+  "at" 'agent-shell-toggle
+  "ai" 'agent-shell-interrupt
+  ;; Send context
+  "as" 'agent-shell-send-region
+  "af" 'agent-shell-send-file
+  "ad" 'agent-shell-send-dwim
+  "aS" 'agent-shell-send-screenshot
+  ;; Session
+  "am" 'agent-shell-set-session-model
+  "aM" 'agent-shell-set-session-mode
+  "aq" '(lambda () (interactive) (call-interactively 'agent-shell-queue-request) :which-key "queue request")
+  "ar" 'agent-shell-resume-pending-requests
+  ;; Permissions
+  "ap" 'agent-shell-jump-to-latest-permission-button-row
+  ;; Compose / transcripts / other
+  "ab" 'agent-shell-buffers
+  "ac" 'agent-shell-prompt-compose
+  "ao" 'agent-shell-open-transcript
+  "av" 'agent-shell-other-buffer
+  "aw" 'agent-shell-new-worktree-shell
+  "ah" 'agent-shell-help-menu
 
   ;; Mic/Whisper
   "m" '(:ignore t :which-key "mic")

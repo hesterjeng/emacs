@@ -224,8 +224,8 @@
   ;; Ediff: hide Claude window during diff + keep focus on diff controls
   (setq claude-code-ide-show-claude-window-in-ediff nil
         claude-code-ide-focus-claude-after-ediff nil)
-  ;; Batch render updates at 16ms (1 frame @ 60fps) instead of 5ms
-  (setq claude-code-ide-vterm-render-delay 0.016)
+  ;; Batch render updates at 1s — skip spinner/progress animation entirely
+  (setq claude-code-ide-vterm-render-delay 1.0)
   ;; Fix ambiguous-width Unicode chars (spinners/bullets) that cause flicker
   (defun claude-code-ide--fix-char-widths ()
     "Set Claude's spinner and bullet characters to single width."
@@ -234,7 +234,63 @@
         (set-char-table-range table char 1))
       (set-char-table-parent table char-width-table)
       (setq-local char-width-table table)))
-  (add-hook 'vterm-mode-hook #'claude-code-ide--fix-char-widths))
+  (add-hook 'vterm-mode-hook #'claude-code-ide--fix-char-widths)
+  ;; Disable scroll-margin in vterm to prevent buffer jumping back
+  (defun claude-code-ide--fix-vterm-scrolling ()
+    "Disable settings that cause erratic scrolling in vterm buffers."
+    (setq-local scroll-margin 0)
+    (setq-local scroll-conservatively 0)
+    (setq-local pixel-scroll-precision-mode nil))
+  (add-hook 'vterm-mode-hook #'claude-code-ide--fix-vterm-scrolling)
+  ;; Limit scrollback so old output doesn't cause lag/jumping
+  (setq vterm-max-scrollback 512)
+  ;; Make C-c C-l actually clear scrollback, not just the visible screen
+  (defun claude-code-ide--clear-scrollback ()
+    "Clear vterm scrollback buffer completely."
+    (interactive)
+    (vterm-clear-scrollback)
+    (vterm-clear))
+  (add-hook 'vterm-mode-hook
+            (lambda ()
+              (local-set-key (kbd "C-c C-l") #'claude-code-ide--clear-scrollback))))
+
+;; agent-shell - native buffer AI agent via ACP (no vterm)
+(use-package agent-shell
+  :ensure nil
+  :commands (agent-shell agent-shell-new-shell agent-shell-toggle
+             agent-shell-send-region agent-shell-send-file
+             agent-shell-send-dwim agent-shell-prompt-compose)
+  :custom
+  ;; Skip agent selection — always use Claude Code
+  (agent-shell-preferred-agent-config
+   (agent-shell-anthropic-make-claude-code-config))
+  ;; Ask whether to resume or start fresh each time
+  (agent-shell-session-strategy 'prompt)
+  ;; Use viewport (richer overlay-based view) as primary interaction
+  (agent-shell-prefer-viewport-interaction t)
+  ;; Collapse thinking/tool-use by default to reduce noise
+  (agent-shell-thought-process-expand-by-default nil)
+  (agent-shell-tool-use-expand-by-default nil)
+  ;; Syntax highlight code blocks in responses (minor perf cost)
+  (agent-shell-highlight-blocks t)
+  ;; Interactive permission approval (nil = always prompt)
+  ;; Set to #'agent-shell-permission-allow-always for YOLO mode
+  (agent-shell-permission-responder-function nil)
+  ;; Confirm before interrupting a running request
+  (agent-shell-confirm-interrupt t)
+  :config
+  (setq agent-shell-anthropic-authentication
+        (agent-shell-anthropic-make-authentication :login t))
+  ;; Evil-friendly: RET inserts newline, M-RET submits
+  (evil-define-key 'insert agent-shell-mode-map
+    (kbd "RET") #'newline
+    (kbd "M-<return>") #'shell-maker-submit)
+  (evil-define-key 'normal agent-shell-mode-map
+    (kbd "RET") #'agent-shell-ui-toggle-fragment-at-point
+    (kbd "TAB") #'agent-shell-next-item
+    (kbd "<backtab>") #'agent-shell-previous-item
+    (kbd "]]") #'agent-shell-next-item
+    (kbd "[[") #'agent-shell-previous-item))
 
 (provide 'init)
 ;;; init.el ends here
