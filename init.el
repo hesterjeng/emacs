@@ -1,4 +1,4 @@
-;;; package --- Emacs configuration using use-package
+;;; init.el --- Emacs configuration using use-package  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 
@@ -267,7 +267,7 @@
   ;; Ask whether to resume or start fresh each time
   (agent-shell-session-strategy 'prompt)
   ;; Use viewport (richer overlay-based view) as primary interaction
-  (agent-shell-prefer-viewport-interaction t)
+  (agent-shell-prefer-viewport-interaction nil)
   ;; Collapse thinking/tool-use by default to reduce noise
   (agent-shell-thought-process-expand-by-default nil)
   (agent-shell-tool-use-expand-by-default nil)
@@ -290,7 +290,15 @@
     (kbd "TAB") #'agent-shell-next-item
     (kbd "<backtab>") #'agent-shell-previous-item
     (kbd "]]") #'agent-shell-next-item
-    (kbd "[[") #'agent-shell-previous-item))
+    (kbd "[[") #'agent-shell-previous-item)
+  ;; Viewport view mode: use Emacs state so single-letter keys (r, y, f, b,
+  ;; n, p, etc.) reach the viewport keymap instead of being eaten by Evil.
+  (evil-set-initial-state 'agent-shell-viewport-view-mode 'emacs)
+  ;; Viewport edit mode: Evil insert state for composing prompts
+  (evil-set-initial-state 'agent-shell-viewport-edit-mode 'insert)
+  ;; Diff mode: use Emacs state so single-letter keys (n, p, y, f, q)
+  ;; reach agent-shell-diff-mode-map instead of being eaten by Evil.
+  (evil-set-initial-state 'agent-shell-diff-mode 'emacs))
 
 (provide 'init)
 ;;; init.el ends here

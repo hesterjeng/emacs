@@ -100,7 +100,11 @@
   "aa" 'agent-shell
   "an" 'agent-shell-new-shell
   "at" 'agent-shell-toggle
-  "ai" 'agent-shell-interrupt
+  "ai" '((lambda () (interactive)
+           (if (derived-mode-p 'agent-shell-viewport-view-mode)
+               (agent-shell-viewport-interrupt)
+             (agent-shell-interrupt)))
+          :which-key "interrupt")
   ;; Send context
   "as" 'agent-shell-send-region
   "af" 'agent-shell-send-file
@@ -109,17 +113,34 @@
   ;; Session
   "am" 'agent-shell-set-session-model
   "aM" 'agent-shell-set-session-mode
-  "aq" '(lambda () (interactive) (call-interactively 'agent-shell-queue-request) :which-key "queue request")
+  "aq" '(agent-shell-queue-request :which-key "queue request")
   "ar" 'agent-shell-resume-pending-requests
   ;; Permissions
   "ap" 'agent-shell-jump-to-latest-permission-button-row
   ;; Compose / transcripts / other
-  "ab" 'agent-shell-buffers
+  "ab" '((lambda () (interactive)
+           (let ((bufs (agent-shell-buffers)))
+             (if bufs
+                 (switch-to-buffer
+                  (completing-read "Agent shell: "
+                                   (mapcar #'buffer-name bufs) nil t))
+               (user-error "No agent shell buffers"))))
+          :which-key "agent shell buffers")
   "ac" 'agent-shell-prompt-compose
   "ao" 'agent-shell-open-transcript
   "av" 'agent-shell-other-buffer
   "aw" 'agent-shell-new-worktree-shell
   "ah" 'agent-shell-help-menu
+  ;; Session management
+  "aF" 'agent-shell-fork
+  "aR" 'agent-shell-restart
+  "ax" 'agent-shell-remove-pending-request
+  "aC" 'agent-shell-cycle-session-mode
+  "aI" 'agent-shell-copy-session-id
+  "ay" 'agent-shell-yank-dwim
+  ;; Debugging
+  "al" 'agent-shell-toggle-logging
+  "aL" 'agent-shell-view-acp-logs
 
   ;; Mic/Whisper
   "m" '(:ignore t :which-key "mic")
