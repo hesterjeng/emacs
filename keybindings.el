@@ -1,4 +1,4 @@
-;;; keybindings.el --- Custom keybindings configuration using general.el
+;;; keybindings.el --- Custom keybindings configuration using general.el  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 ;; Custom SPC leader key bindings using general.el

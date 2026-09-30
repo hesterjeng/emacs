@@ -66,11 +66,31 @@
 (use-package lsp-mode
   :init
   (setq lsp-keymap-prefix "C-c l")
-  :hook ((tuareg-mode . lsp)
+  ;; We use Guix, not opam: invoke the ocamllsp binary directly instead of
+  ;; the default "opam exec -- ocamllsp" wrapper, which fails with no opam.
+  (setq lsp-ocaml-lsp-server-command '("ocamllsp"))
+  ;; Don't start lsp in read-only Guix store / profile / findlib dirs. Jumping to
+  ;; a library definition (M-.) lands in a store `.ml`; if lsp booted a *second*
+  ;; server rooted there, it has no dune-project/.merlin and can't resolve
+  ;; anything — that desync is what caused the "no document found ... didChange"
+  ;; loop. Library type/nav still works via THIS project's server, which already
+  ;; has all the store build paths baked into its dune .merlin-conf, so the buffer
+  ;; you land in just doesn't need its own server.
+  ;; Use `lsp-deferred', not `lsp': it opens the document on the server only once
+  ;; the buffer is actually current, avoiding the didOpen/didChange race (server
+  ;; gets an edit for a URI it never saw opened) that shows up as repeated
+  ;; "no document found with uri: ...".
+  (defun my/lsp-unless-readonly-lib ()
+    "Start `lsp-deferred' unless visiting a read-only Guix store/profile library file."
+    (unless (and buffer-file-name
+                 (string-match-p "/gnu/store/\\|/\\.guix-profile/\\|/site-lib/"
+                                 buffer-file-name))
+      (lsp-deferred)))
+  :hook ((tuareg-mode . my/lsp-unless-readonly-lib)
          (typescript-mode . lsp)
          (js2-mode . lsp)
          (python-mode . lsp))
-  :commands lsp)
+  :commands (lsp lsp-deferred))
 
 ;; LSP UI - UI improvements for LSP
 (use-package lsp-ui
@@ -80,6 +100,10 @@
 (use-package yasnippet
   :config
   (yas-global-mode 1))
+
+;; Community snippet collection (must load before/with yasnippet's dir scan)
+(use-package yasnippet-snippets
+  :after yasnippet)
 
 ;; Flycheck - syntax checking
 (use-package flycheck
@@ -96,6 +120,34 @@
 ;; Guix interface
 (use-package guix
   :after magit-popup)
+
+;; diff-hl - show git added/changed/deleted lines in the fringe
+(use-package diff-hl
+  :config
+  (global-diff-hl-mode)
+  ;; Refresh indicators live in dired and immediately after Magit commits
+  (add-hook 'dired-mode-hook #'diff-hl-dired-mode)
+  (with-eval-after-load 'magit
+    (add-hook 'magit-pre-refresh-hook #'diff-hl-magit-pre-refresh)
+    (add-hook 'magit-post-refresh-hook #'diff-hl-magit-post-refresh)))
+
+;; rainbow-delimiters - depth-colored parens, invaluable for lisp/scheme/ocaml
+(use-package rainbow-delimiters
+  :hook (prog-mode . rainbow-delimiters-mode))
+
+;; hl-todo - highlight TODO/FIXME/HACK/NOTE keywords in comments
+(use-package hl-todo
+  :config
+  (global-hl-todo-mode))
+
+;; editorconfig - honor a repo's .editorconfig (indent style, width, etc.)
+(use-package editorconfig
+  :config
+  (editorconfig-mode 1))
+
+;; ws-butler - trim trailing whitespace, but only on lines you actually edited
+(use-package ws-butler
+  :hook (prog-mode . ws-butler-mode))
 
 ;; Envrc - direnv integration (buffer-local environments)
 (use-package envrc
@@ -122,6 +174,23 @@
   (general-auto-unbind-keys t)
   (general-evil-setup t))
 
+;; Evil surround - cs"' , ysiw) , ds( etc. to manipulate delimiters
+(use-package evil-surround
+  :after evil
+  :config
+  (global-evil-surround-mode 1))
+
+;; Evil nerd commenter - gc (operator), gcc (current line), gc in visual.
+;; NOTE: we deliberately do NOT call `evilnc-default-hotkeys', which would
+;; steal C-c l and C-c p globally (our lsp-keymap-prefix and projectile map).
+(use-package evil-nerd-commenter
+  :after evil
+  :commands (evilnc-comment-operator evilnc-copy-and-comment-operator)
+  :config
+  (evil-define-key '(normal visual) 'global
+    "gc" #'evilnc-comment-operator          ; gcc = current line (operator doubling)
+    "gy" #'evilnc-copy-and-comment-operator))
+
 ;; Helm - completion framework
 (use-package helm
   :config
@@ -132,9 +201,29 @@
   (setq helm-scroll-amount 4)
   (setq helm-ff-file-name-history-use-recentf t))
 
-;; Configure projectile to use helm for completion
+;; Helm + LSP: fuzzy-jump to any symbol in the LSP workspace
+(use-package helm-lsp
+  :after (helm lsp-mode)
+  :commands helm-lsp-workspace-symbol
+  :config
+  ;; Replace lsp-mode's default xref symbol search with the helm UI
+  (with-eval-after-load 'lsp-mode
+    (define-key lsp-mode-map [remap xref-find-apropos]
+                #'helm-lsp-workspace-symbol)))
+
+;; Helm-ag: fast project-wide search backed by ripgrep
+(use-package helm-ag
+  :after helm
+  :commands (helm-ag helm-do-ag helm-do-ag-project-root)
+  :init
+  (setq helm-ag-base-command "rg --no-heading --line-number --color never"))
+
+;; Let helm-mode (enabled above) handle projectile's completing-read via the
+;; compatible completing-read-function path. Projectile's own 'helm branch
+;; calls `helm' with an argument layout current helm rejects
+;; ("Initial input should be a string or nil"), so use 'default here.
 (with-eval-after-load 'projectile
-  (setq projectile-completion-system 'helm))
+  (setq projectile-completion-system 'default))
 
 ;; OCaml support
 (use-package tuareg
@@ -175,6 +264,59 @@
 
 ;; Python virtual environment support
 (use-package pyvenv)
+
+;; Markdown - make prose render clean and readable instead of raw text+color
+(use-package markdown-mode
+  :ensure nil  ; Already installed via Guix (emacs-markdown-mode)
+  :mode (("README\\.md\\'" . gfm-mode)   ; GitHub-flavored for READMEs
+         ("\\.md\\'"       . markdown-mode)
+         ("\\.markdown\\'" . markdown-mode))
+  :init
+  ;; Used only for C-c C-c export/preview; harmless if pandoc isn't installed.
+  (setq markdown-command "pandoc")
+  :config
+  ;; Fontify fenced code blocks with the target language's own font-lock.
+  (setq markdown-fontify-code-blocks-natively t)
+  ;; Hide the raw markup (**, _, `, #) once it's styled. This variable is
+  ;; buffer-local (make-variable-buffer-local in markdown-mode), so it MUST be
+  ;; set with setq-default here — a plain `setq' would only touch whatever
+  ;; buffer is current at load time and never affect real markdown buffers.
+  ;; Toggle live with `C-c C-x C-m' (markdown-toggle-markup-hiding) to edit.
+  (setq-default markdown-hide-markup t)
+  ;; Also hide inline URLs behind their link text for cleaner prose.
+  (setq-default markdown-hide-urls t)
+  ;; Bigger, bolder headings that step down in size like a rendered document.
+  (setq markdown-header-scaling t
+        markdown-header-scaling-values '(1.7 1.5 1.3 1.15 1.05 1.0))
+  (markdown-update-header-faces markdown-header-scaling
+                                markdown-header-scaling-values)
+  ;; Proportional body text + soft-wrapped lines = document, not source code.
+  (defun my/markdown-prose-look ()
+    "Give Markdown buffers a readable, document-like appearance."
+    (variable-pitch-mode 1)           ; proportional font for prose
+    (visual-line-mode 1)              ; wrap long lines at word boundaries
+    (setq-local line-spacing 0.15)    ; a little breathing room between lines
+    ;; Force markup hiding on for this buffer (bulletproof against reloads and
+    ;; buffers opened before the default took effect); refontifies to apply it.
+    (markdown-toggle-markup-hiding 1)
+    ;; Centered, fixed-width reading column so text isn't smushed against the
+    ;; left edge on a wide monitor. Body width is a fraction of the window.
+    (when (require 'olivetti nil t)
+      (setq-local olivetti-body-width 0.72)
+      (olivetti-mode 1))
+    ;; Wrapped continuation lines (under bullets, numbered items, blockquotes)
+    ;; indent to align with their content instead of the left margin.
+    (when (require 'adaptive-wrap nil t)
+      (setq-local adaptive-wrap-extra-indent 2)
+      (adaptive-wrap-prefix-mode 1))
+    ;; Keep anything that must stay monospaced (code, tables) fixed-pitch.
+    (dolist (face '(markdown-code-face
+                    markdown-inline-code-face
+                    markdown-pre-face
+                    markdown-table-face
+                    markdown-language-keyword-face))
+      (face-remap-add-relative face :inherit 'fixed-pitch)))
+  (add-hook 'markdown-mode-hook #'my/markdown-prose-look))
 
 ;; Dumb-jump - go-to-definition using ripgrep/ag/grep
 (use-package dumb-jump
@@ -281,6 +423,20 @@
   :config
   (setq agent-shell-anthropic-authentication
         (agent-shell-anthropic-make-authentication :login t))
+  ;; Fix: strip text properties from history ring before writing.
+  ;; shell-maker uses `buffer-substring' (not -no-properties) when
+  ;; extracting history, so keymaps/font-lock/cursor-sensor closures
+  ;; from agent-shell-ui links get serialized into the history file
+  ;; via prin1, producing unreadable garbage on restore.
+  (defun agent-shell--strip-history-properties (config)
+    "Strip text properties from comint-input-ring entries before save."
+    (when (ring-p comint-input-ring)
+      (let ((vec (cddr comint-input-ring)))
+        (dotimes (i (length vec))
+          (when (stringp (aref vec i))
+            (aset vec i (substring-no-properties (aref vec i))))))))
+  (advice-add 'shell-maker--write-input-ring-history
+              :before #'agent-shell--strip-history-properties)
   ;; Evil-friendly: RET inserts newline, M-RET submits
   (evil-define-key 'insert agent-shell-mode-map
     (kbd "RET") #'newline
@@ -298,7 +454,13 @@
   (evil-set-initial-state 'agent-shell-viewport-edit-mode 'insert)
   ;; Diff mode: use Emacs state so single-letter keys (n, p, y, f, q)
   ;; reach agent-shell-diff-mode-map instead of being eaten by Evil.
-  (evil-set-initial-state 'agent-shell-diff-mode 'emacs))
+  ;; Also remove evil-collection's read-only state switcher which would
+  ;; override the initial state back to motion.
+  (evil-set-initial-state 'agent-shell-diff-mode 'emacs)
+  (add-hook 'agent-shell-diff-mode-hook
+            (lambda ()
+              (remove-hook 'read-only-mode-hook
+                           #'evil-collection-diff-read-only-state-switch t))))
 
 (provide 'init)
 ;;; init.el ends here

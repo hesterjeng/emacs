@@ -1,4 +1,4 @@
-;;; splash.el --- Dashboard configuration
+;;; splash.el --- Dashboard configuration  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
 ;; Configuration for Emacs dashboard with centering
