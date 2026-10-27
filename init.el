@@ -34,6 +34,10 @@
   ;; Only show prefix keys
   (setq which-key-show-prefix 'bottom))
 
+;; Theme - built-in modus, tritanopia-friendly dark variant.
+;; Loaded before smart-mode-line so its respectful theme inherits these colors.
+(load-theme 'modus-vivendi-tritanopia t)
+
 ;; Smart mode line - cleaner, more informative modeline
 (use-package smart-mode-line
   :ensure nil  ; Already installed via Guix
